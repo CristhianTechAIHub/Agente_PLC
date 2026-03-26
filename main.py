@@ -53,7 +53,7 @@ config = {"configurable": {"thread_id": "1"}}
 
 # Ahora, cuando el agente invoque search_local_pdfs, tendrá acceso al buscador pre-cargado
 response = agent.invoke(
-    {"messages": [{"role": "user", "content": "según los manuales, ¿Qué modelos puedo entrenar para clasificación de imágenes?, ¿Puedo usar cualquier modelo o hay restricciones?"}]},
+    {"messages": [{"role": "user", "content": "según el manual del SCALANCE SC-600, como debo conectar la alimentación del equipo?"}]},
     config=config,
     context=current_context
 )
