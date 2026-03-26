@@ -3,6 +3,7 @@ env/
 venv/
 agenteIA/
 .env
+.gitignore
 
 # Archivos de caché de Python
 __pycache__/
