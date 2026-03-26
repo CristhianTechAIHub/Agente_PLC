@@ -19,4 +19,4 @@ El sistema está construido con un enfoque modular y escalable:
 
 1. Clona este repositorio:
    ```bash
-   git clone [https://github.com/TU_USUARIO/Industrial-Agent-AI.git](https://github.com/TU_USUARIO/Industrial-Agent-AI.git)
+   git clone [https://github.com/CristhianTechAIHub/Agente_PLC.git](https://github.com/CristhianTechAIHub/Agente_PLC.git)
