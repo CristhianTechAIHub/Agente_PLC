@@ -1,0 +1,15 @@
+# Entornos virtuales
+env/
+venv/
+agenteIA/
+.env
+
+# Archivos de caché de Python
+__pycache__/
+*.pyc
+
+# Bases de datos vectoriales locales
+files/
+
+# Archivos PDF (Opcional, pero recomendado si los manuales de Siemens tienen copyright)
+*.pdf
