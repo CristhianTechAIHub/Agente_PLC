@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interfaz del Agente PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+        /* El "textbox" donde va el historial */
+        #caja-chat {
+            height: 400px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+        /* El contenedor del input y el botón */
+        #contenedor-input {
+            display: flex;
+            gap: 10px;
+        }
+        #input-pregunta {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        #boton-enviar {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #boton-enviar:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Consulta a tus Documentos</h2>
+    
+    <!-- Aquí se inyectarán los mensajes del usuario y del agente -->
+    <div id="caja-chat"></div>
+
+    <div id="contenedor-input">
+        <input type="text" id="input-pregunta" placeholder="Escribe tu duda aquí...">
+        <button id="boton-enviar">Enviar</button>
+    </div>
+
+    <script>
+        const cajaChat = document.getElementById('caja-chat');
+        const inputPregunta = document.getElementById('input-pregunta');
+        const botonEnviar = document.getElementById('boton-enviar');
+
+        // Función auxiliar para imprimir mensajes en la caja de chat
+        function agregarMensaje(remitente, texto, color) {
+            const mensajeDiv = document.createElement('div');
+            mensajeDiv.style.marginBottom = '12px';
+            mensajeDiv.style.lineHeight = '1.4';
+            mensajeDiv.innerHTML = `<strong style="color: ${color};">${remitente}:</strong> <span>${texto}</span>`;
+            
+            cajaChat.appendChild(mensajeDiv);
+            
+            // Auto-scroll hacia el final para ver siempre el mensaje más reciente
+            cajaChat.scrollTop = cajaChat.scrollHeight;
+        }
+
+        // Función principal asíncrona
+        async function procesarEnvio() {
+            const pregunta = inputPregunta.value.trim();
+            
+            // Validar que no se envíen mensajes vacíos
+            if (pregunta === '') return;
+
+            // 1. Mostrar la pregunta del usuario en la UI
+            agregarMensaje('Tú', pregunta, '#007bff');
+            
+            // Limpiar la caja de texto y deshabilitar el input temporalmente
+            inputPregunta.value = '';
+            inputPregunta.disabled = true;
+            botonEnviar.disabled = true;
+
+            // Mostrar indicador de carga
+            const idCarga = 'indicador-carga';
+            const cargaDiv = document.createElement('div');
+            cargaDiv.id = idCarga;
+            cargaDiv.style.color = '#6c757d';
+            cargaDiv.style.fontStyle = 'italic';
+            cargaDiv.innerText = 'El agente está analizando los documentos...';
+            cajaChat.appendChild(cargaDiv);
+            cajaChat.scrollTop = cajaChat.scrollHeight;
+
+            try {
+                // 2. Hacer la llamada (Fetch) a tu endpoint de FastAPI
+                // Nota: Asegúrate de tener creado tu endpoint POST /chat en FastAPI
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Convertimos la pregunta al formato JSON que espera tu Pydantic model
+                    body: JSON.stringify({ pregunta: pregunta })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // 3. Remover el indicador de carga
+                document.getElementById(idCarga).remove();
+
+                // 4. Mostrar la respuesta del agente
+                // Se asume que tu backend retorna: {"respuesta": "texto"}
+                agregarMensaje('Agente', data.respuesta, '#28a745');
+
+            } catch (error) {
+                console.error('Error en la comunicación:', error);
+                document.getElementById(idCarga).remove();
+                agregarMensaje('Sistema', '❌ Hubo un error al conectar con el backend.', '#dc3545');
+            } finally {
+                // Volver a habilitar el input sin importar si hubo error o éxito
+                inputPregunta.disabled = false;
+                botonEnviar.disabled = false;
+                inputPregunta.focus();
+            }
+        }
+
+        // Asignar el evento al botón de enviar
+        botonEnviar.addEventListener('click', procesarEnvio);
+
+        // Asignar el evento a la tecla "Enter" para mayor comodidad
+        inputPregunta.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                procesarEnvio();
+            }
+        });
+    </script>
+
+</body>
+</html>

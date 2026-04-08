@@ -7,8 +7,8 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langchain.agents import create_agent
 from utils.utils import SYSTEM_PROMPT
 from utils.llm_config import get_llm
-from models.schemas import Context, ResponseFormat
-from tools.tools import search_local_pdfs
+from app.core.schemas import Context, ResponseFormat
+from agent.tools import search_local_pdfs
 from langchain.agents.structured_output import ToolStrategy
 
 
@@ -53,7 +53,7 @@ config = {"configurable": {"thread_id": "1"}}
 
 # Ahora, cuando el agente invoque search_local_pdfs, tendrá acceso al buscador pre-cargado
 response = agent.invoke(
-    {"messages": [{"role": "user", "content": "según el manual del SCALANCE SC-600, como debo conectar la alimentación del equipo?"}]},
+    {"messages": [{"role": "user", "content": "segun el manual, como puedo conectar dispositivos conectados al swithch hacia internet?"}]},
     config=config,
     context=current_context
 )
