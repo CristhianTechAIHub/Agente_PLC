@@ -1,6 +1,8 @@
 # codigo principal para la creación de un agente
+import os
 from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader
 from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langgraph.checkpoint.memory import InMemorySaver
@@ -46,6 +48,29 @@ agent = create_agent(
 print("Agente configurado y listo para recibir preguntas.")
 
 
+def _reconstruir_vectorstore(data_dir: str) -> None:
+    """Reconstruye el vectorstore leyendo todos los PDFs presentes en data_dir."""
+    global vectorstore, retriever
+
+    pdfs = [
+        os.path.join(data_dir, f)
+        for f in os.listdir(data_dir)
+        if f.lower().endswith(".pdf")
+    ]
+
+    if pdfs:
+        docs = []
+        for path in pdfs:
+            docs.extend(PyPDFLoader(path).load())
+        splits = text_splitter.split_documents(docs)
+    else:
+        # Sin documentos: placeholder para mantener el vectorstore válido
+        splits = [Document(page_content="Sin documentos cargados.", metadata={"source": "__placeholder__"})]
+
+    vectorstore = FAISS.from_documents(splits, embeddings)
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+
+
 def agregar_documentos(file_paths: list[str]) -> int:
     """
     Carga los PDFs indicados, los fragmenta e incorpora al vectorstore existente.
@@ -55,19 +80,36 @@ def agregar_documentos(file_paths: list[str]) -> int:
 
     nuevos_docs = []
     for path in file_paths:
-        loader = PyPDFLoader(path)
-        nuevos_docs.extend(loader.load())
+        nuevos_docs.extend(PyPDFLoader(path).load())
 
     if not nuevos_docs:
         return 0
 
     nuevos_splits = text_splitter.split_documents(nuevos_docs)
     vectorstore.add_documents(nuevos_splits)
-
-    # Actualizar el retriever para que apunte al vectorstore ya modificado
     retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
     return len(nuevos_splits)
+
+
+def eliminar_documento(data_dir: str, filename: str) -> None:
+    """
+    Elimina el PDF indicado del disco y reconstruye el vectorstore desde cero
+    con los archivos restantes.
+    """
+    ruta = os.path.join(data_dir, filename)
+    if not os.path.isfile(ruta):
+        raise FileNotFoundError(f"'{filename}' no existe en el directorio de datos.")
+
+    os.remove(ruta)
+    _reconstruir_vectorstore(data_dir)
+
+
+def listar_documentos(data_dir: str) -> list[str]:
+    """Devuelve los nombres de los PDFs presentes en data_dir."""
+    if not os.path.isdir(data_dir):
+        return []
+    return sorted(f for f in os.listdir(data_dir) if f.lower().endswith(".pdf"))
 
 # declaramos la función asíncrona para consultar al agente
 

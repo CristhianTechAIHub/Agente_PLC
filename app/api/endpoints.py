@@ -1,9 +1,8 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from pydantic import BaseModel
-import asyncio
 import os
 import shutil
-from agent.workflows import consultar_agente, agregar_documentos
+from agent.workflows import consultar_agente, agregar_documentos, eliminar_documento, listar_documentos
 
 router = APIRouter()
 
@@ -17,6 +16,11 @@ class UserQuery(BaseModel):
 async def consultar_pregunta(query: UserQuery):
     agent_response = await consultar_agente(query.pregunta)
     return {"respuesta": agent_response}
+
+
+@router.get("/documents")
+async def obtener_documentos():
+    return {"archivos": listar_documentos(DATA_DIR)}
 
 
 @router.post("/upload")
@@ -39,3 +43,12 @@ async def cargar_documentos(archivos: list[UploadFile] = File(...)):
         "archivos_cargados": [a.filename for a in archivos],
         "fragmentos_indexados": fragmentos
     }
+
+
+@router.delete("/documents/{filename}")
+async def eliminar_documento_endpoint(filename: str):
+    try:
+        eliminar_documento(DATA_DIR, filename)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"'{filename}' no encontrado.")
+    return {"eliminado": filename}
