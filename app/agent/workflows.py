@@ -5,16 +5,17 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain.agents import create_agent
-from utils.utils import SYSTEM_PROMPT
-from utils.llm_config import get_llm
-from app.core.schemas import Context, ResponseFormat
+from agent.prompts import SYSTEM_PROMPT
+from core.llm_config import get_llm
+from core.schemas import Context, ResponseFormat
 from agent.tools import search_local_pdfs
 from langchain.agents.structured_output import ToolStrategy
 
 
+print("Iniciando configuraciones del agente")
 
 # 1. Cargar PDFs
-loader = PyPDFDirectoryLoader("./docs")
+loader = PyPDFDirectoryLoader("../data")
 docs = loader.load()
 
 # 2. Cortar el texto en fragmentos (chunks) digeribles para el LLM
@@ -27,12 +28,6 @@ vectorstore = FAISS.from_documents(splits, embeddings)
 
 # 4. Convertirlo en un "retriever" (buscador)
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3}) # k=3 significa que traerá los 3 fragmentos más relevantes
-
-# Inyectamos el retriever en nuestro contexto actual
-current_context = Context(
-    user_id="1", 
-    pdf_retriever=retriever 
-)
 
 checkpointer = InMemorySaver()
 
@@ -48,19 +43,39 @@ agent = create_agent(
     checkpointer=checkpointer
 )
 
-# asignamos el id de conversacion
-config = {"configurable": {"thread_id": "1"}}
+print("Agente configurado y listo para recibir preguntas.")
 
-# Ahora, cuando el agente invoque search_local_pdfs, tendrá acceso al buscador pre-cargado
-response = agent.invoke(
-    {"messages": [{"role": "user", "content": "segun el manual, como puedo conectar dispositivos conectados al swithch hacia internet?"}]},
-    config=config,
-    context=current_context
-)
+# declaramos la función asíncrona para consultar al agente
 
-print("\nRESPUESTA DEL AGENTE:")
-print("------------------------")
-print(response['structured_response'] if 'structured_response' in response else response)
-print("------------------------")
+async def consultar_agente(pregunta: str) -> str:
+    # Inyectamos el retriever en nuestro contexto actual
+    current_context = Context(
+        user_id="1", 
+        pdf_retriever=retriever 
+    )
 
+    # asignamos el id de conversacion
+    config = {"configurable": {"thread_id": "1"}}
+
+    # Ahora, cuando el agente invoque search_local_pdfs, tendrá acceso al buscador pre-cargado
+    response = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": pregunta}]},
+        config=config,
+        context=current_context
+    )
+
+    if 'structured_response' in response:
+        # Como usaste ToolStrategy(ResponseFormat), la respuesta es un objeto.
+        # Convirtámoslo a string temporalmente para ver qué contiene.
+        # (Si tu ResponseFormat tiene un campo específico como 'respuesta_final', 
+        # deberías usar: return response['structured_response'].respuesta_final)
+        return str(response['structured_response'].respuesta_tecnica)
+
+    elif 'messages' in response:
+        # Si es una respuesta normal de LangGraph, sacamos el contenido del último mensaje (la IA)
+        return response['messages'][-1].content
+        
+    else:
+        # Fallback de seguridad por si cambia la estructura
+        return str(response)
 

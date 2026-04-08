@@ -1,5 +1,5 @@
 from langchain.tools import tool, ToolRuntime
-from app.core.schemas import Context 
+from core.schemas import Context 
 @tool
 def search_local_pdfs(query: str, runtime: ToolRuntime[Context]) -> str:
     """
