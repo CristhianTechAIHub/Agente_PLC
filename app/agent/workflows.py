@@ -1,5 +1,5 @@
 # codigo principal para la creación de un agente
-from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain_community.document_loaders import PyPDFDirectoryLoader, PyPDFLoader
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -11,19 +11,19 @@ from core.schemas import Context, ResponseFormat
 from agent.tools import search_local_pdfs
 from langchain.agents.structured_output import ToolStrategy
 
-
 print("Iniciando configuraciones del agente")
 
-# 1. Cargar PDFs
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+
+# 1. Cargar PDFs iniciales
 loader = PyPDFDirectoryLoader("../data")
 docs = loader.load()
 
 # 2. Cortar el texto en fragmentos (chunks) digeribles para el LLM
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 splits = text_splitter.split_documents(docs)
 
 # 3. Crear la base de datos vectorial en memoria (FAISS)
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 vectorstore = FAISS.from_documents(splits, embeddings)
 
 # 4. Convertirlo en un "retriever" (buscador)
@@ -44,6 +44,30 @@ agent = create_agent(
 )
 
 print("Agente configurado y listo para recibir preguntas.")
+
+
+def agregar_documentos(file_paths: list[str]) -> int:
+    """
+    Carga los PDFs indicados, los fragmenta e incorpora al vectorstore existente.
+    Devuelve la cantidad de fragmentos añadidos.
+    """
+    global vectorstore, retriever
+
+    nuevos_docs = []
+    for path in file_paths:
+        loader = PyPDFLoader(path)
+        nuevos_docs.extend(loader.load())
+
+    if not nuevos_docs:
+        return 0
+
+    nuevos_splits = text_splitter.split_documents(nuevos_docs)
+    vectorstore.add_documents(nuevos_splits)
+
+    # Actualizar el retriever para que apunte al vectorstore ya modificado
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+
+    return len(nuevos_splits)
 
 # declaramos la función asíncrona para consultar al agente
 

@@ -45,12 +45,67 @@
         #boton-enviar:hover {
             background-color: #0056b3;
         }
+        /* Sección de carga de documentos */
+        #seccion-carga {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f0f4ff;
+        }
+        #seccion-carga h3 {
+            margin: 0 0 0.75rem 0;
+            font-size: 15px;
+            color: #333;
+        }
+        #contenedor-upload {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        #input-archivos {
+            flex-grow: 1;
+            font-size: 14px;
+        }
+        #boton-subir {
+            padding: 8px 16px;
+            background-color: #6f42c1;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        #boton-subir:hover {
+            background-color: #5a32a3;
+        }
+        #boton-subir:disabled {
+            background-color: #a88bd1;
+            cursor: not-allowed;
+        }
+        #estado-carga {
+            margin-top: 0.5rem;
+            font-size: 13px;
+            min-height: 18px;
+        }
     </style>
 </head>
 <body>
 
     <h2>Consulta a tus Documentos</h2>
-    
+
+    <!-- Sección de carga de documentos -->
+    <div id="seccion-carga">
+        <h3>Cargar documentos PDF</h3>
+        <div id="contenedor-upload">
+            <input type="file" id="input-archivos" accept=".pdf" multiple>
+            <button id="boton-subir">Subir</button>
+        </div>
+        <div id="estado-carga"></div>
+    </div>
+
     <!-- Aquí se inyectarán los mensajes del usuario y del agente -->
     <div id="caja-chat"></div>
 
@@ -63,6 +118,54 @@
         const cajaChat = document.getElementById('caja-chat');
         const inputPregunta = document.getElementById('input-pregunta');
         const botonEnviar = document.getElementById('boton-enviar');
+        const inputArchivos = document.getElementById('input-archivos');
+        const botonSubir = document.getElementById('boton-subir');
+        const estadoCarga = document.getElementById('estado-carga');
+
+        function setEstado(mensaje, color = '#333') {
+            estadoCarga.style.color = color;
+            estadoCarga.textContent = mensaje;
+        }
+
+        botonSubir.addEventListener('click', async () => {
+            const archivos = inputArchivos.files;
+            if (!archivos.length) {
+                setEstado('Selecciona al menos un archivo PDF.', '#dc3545');
+                return;
+            }
+
+            botonSubir.disabled = true;
+            setEstado('Subiendo y procesando documentos...', '#6c757d');
+
+            const formData = new FormData();
+            for (const archivo of archivos) {
+                formData.append('archivos', archivo);
+            }
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || `Error HTTP: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const nombres = data.archivos_cargados.join(', ');
+                setEstado(
+                    `✓ ${data.archivos_cargados.length} archivo(s) indexados (${data.fragmentos_indexados} fragmentos): ${nombres}`,
+                    '#28a745'
+                );
+                inputArchivos.value = '';
+            } catch (error) {
+                setEstado(`Error: ${error.message}`, '#dc3545');
+            } finally {
+                botonSubir.disabled = false;
+            }
+        });
 
         // Función auxiliar para imprimir mensajes en la caja de chat
         function agregarMensaje(remitente, texto, color) {
