@@ -1,22 +1,27 @@
-# 🏭 Industrial RAG Agent para documentos
+# 🏭 Industrial RAG Agent for Documents
 
-Un agente conversacional de Inteligencia Artificial diseñado para extraer, analizar y responder preguntas técnicas precisas basadas en documentación industrial compleja (manuales de Siemens S7-1500 TM NPU).
+A conversational AI agent designed to extract, analyze, and answer precise technical questions based on complex industrial documentation (Siemens S7-1500 TM NPU manuals).
 
-## 💡 El Problema
-En la automatización industrial, los ingenieros pierden horas valiosas buscando parámetros específicos de configuración, voltajes o procedimientos de seguridad dentro de manuales PDF de cientos de páginas. 
+## 💡 The Problem
 
-## 🚀 La Solución
-Este proyecto implementa una arquitectura **RAG (Retrieval-Augmented Generation)** local. Permite a los usuarios hacer preguntas en lenguaje natural y obtener respuestas técnicas inmediatas, citando exactamente el **documento y el número de página** de donde se extrajo la información para garantizar la trazabilidad y evitar alucinaciones.
+In industrial automation, engineers waste valuable hours searching for specific configuration parameters, voltage specs, or safety procedures buried inside PDF manuals hundreds of pages long.
 
-## ⚙️ Arquitectura Técnica
-El sistema está construido con un enfoque modular y escalable:
-* **Orquestación:** LangGraph y LangChain para la gestión del estado y las herramientas del agente.
-* **Motor de Razonamiento (LLM):** Claude 3.5 Haiku (vía API de Anthropic) configurado con `ToolStrategy` para salidas estructuradas estrictas.
-* **Vectorización Local:** Modelos de HuggingFace (`all-MiniLM-L6-v2`) ejecutados en CPU para garantizar la privacidad de los documentos industriales.
-* **Base de Datos Vectorial:** FAISS (Facebook AI Similarity Search) en memoria para recuperaciones de latencia ultrabaja.
+## 🚀 The Solution
 
-## 🛠️ Instalación y Uso
+This project implements a local **RAG (Retrieval-Augmented Generation)** architecture. It allows users to ask questions in natural language and receive immediate technical answers, citing exactly the **document and page number** where the information was retrieved — ensuring full traceability and eliminating hallucinations.
 
-1. Clona este repositorio:
-   ```bash
-   git clone [https://github.com/CristhianTechAIHub/Agente_PLC.git](https://github.com/CristhianTechAIHub/Agente_PLC.git)
+## ⚙️ Technical Architecture
+
+The system is built with a modular and scalable approach:
+
+* **Orchestration:** LangGraph and LangChain for agent state management and tool handling.
+* **Reasoning Engine (LLM):** Claude 3.5 Haiku (via Anthropic API) configured with `ToolStrategy` for strict structured outputs.
+* **Local Vectorization:** HuggingFace models (`all-MiniLM-L6-v2`) running on CPU to guarantee the privacy of industrial documents.
+* **Vector Database:** FAISS (Facebook AI Similarity Search) in-memory for ultra-low latency retrieval.
+
+## 🛠️ Installation & Usage
+
+1. Clone this repository:
+```bash
+git clone https://github.com/CristhianTechAIHub/Industrial-Agent-AI.git
+```
